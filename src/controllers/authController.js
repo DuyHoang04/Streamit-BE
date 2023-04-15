@@ -1,10 +1,12 @@
 const {
   generateAccessToken,
   generateRefreshToken,
+  generateTokenResetPass,
 } = require("../middlewares/Jwt.js");
 const userModel = require("../models/userModel.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const transporter = require("../util/mailConfig.js");
 
 let refreshTokens = [];
 
@@ -134,7 +136,6 @@ const authController = {
 
   logOut: async (req, res, next) => {
     try {
-      console.log(req.cookies);
       const refreshToken = req.cookies.refreshToken;
 
       // clear cookie khi logout
@@ -143,6 +144,103 @@ const authController = {
       res
         .status(200)
         .json({ success: true, message: "Logged out successfully!" });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  forgotPassword: async (req, res, next) => {
+    try {
+      const { email } = req.body;
+
+      let user = await userModel.findOne({ email });
+
+      if (!user)
+        return res.status(404).json({
+          success: false,
+          message: "User with this email does not exist.",
+        });
+
+      const { _id, isAdmin } = user;
+      const tokenReset = generateTokenResetPass(_id, isAdmin);
+
+      let mailOptions = {
+        from: "hn2929814@gmail.com",
+        to: email,
+        subject: "Password Reset",
+        html: ` 
+        <h2> Please Click on the given link to reset your password </h2>
+        <p>${process.env.CLIENT_URL}/resetpassword/${tokenReset}</p> 
+    `,
+      };
+
+      await userModel.findByIdAndUpdate(
+        user._id,
+        {
+          $set: { resetLink: tokenReset },
+        },
+        { new: true }
+      );
+
+      transporter.sendMail(mailOptions, function (error, info) {
+        if (error) {
+          console.log(error);
+        } else {
+          return res.status(200).json({
+            success: true,
+            message: "Email have been sent, kindly follow the instructions",
+          });
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  resetPassword: async (req, res, next) => {
+    try {
+      const { resetLink, newPass } = req.body;
+
+      if (resetLink) {
+        jwt.verify(
+          resetLink,
+          process.env.JWT_RESET_KEY,
+          async function (err, result) {
+            if (err) {
+              return res.status(401).json({
+                error: "Incorrect token or it is expired.",
+              });
+            }
+          }
+        );
+
+        const user = await userModel.findOne({ resetLink });
+
+        if (!user) {
+          return res
+            .status(400)
+            .json({ error: "User with this token does not exist." });
+        }
+
+        const salt = await bcrypt.genSalt();
+        const passwordHash = await bcrypt.hash(newPass, salt);
+
+        const newPassword = {
+          password: passwordHash,
+          resetLink: "", // after updating the password in db make reset lik empty
+        };
+
+        await userModel.findByIdAndUpdate(user._id, newPassword, { new: true });
+
+        return res.status(200).json({
+          success: true,
+          message: "Your password has been changed",
+        });
+      } else {
+        res
+          .status(404)
+          .json({ success: false, message: "You are not authenticate" });
+      }
     } catch (err) {
       next(err);
     }

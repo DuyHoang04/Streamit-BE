@@ -30,6 +30,7 @@ const UserSchema = mongoose.Schema(
         ref: "Movie",
       },
     ],
+    resetLink: String,
   },
   {
     timestamps: true,

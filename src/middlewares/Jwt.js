@@ -13,6 +13,19 @@ const generateAccessToken = (id, isAdmin) => {
   );
 };
 
+const generateTokenResetPass = (id, isAdmin) => {
+  return jwt.sign(
+    {
+      id,
+      isAdmin,
+    },
+    process.env.JWT_RESET_KEY,
+    {
+      expiresIn: "7d",
+    }
+  );
+};
+
 const generateRefreshToken = (id, isAdmin) => {
   return jwt.sign(
     {
@@ -29,4 +42,5 @@ const generateRefreshToken = (id, isAdmin) => {
 module.exports = {
   generateAccessToken,
   generateRefreshToken,
+  generateTokenResetPass,
 };
