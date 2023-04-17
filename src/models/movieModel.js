@@ -135,6 +135,10 @@ const seriesSchema = new mongoose.Schema(
       required: true,
     },
     reviews: [reviewSchema],
+    isSeries: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );

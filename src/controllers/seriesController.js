@@ -1,14 +1,14 @@
-const { movieModel } = require("../models/movieModel");
 const categoryModel = require("../models/categoryModel");
 const userModel = require("../models/userModel");
+const { seriesModel } = require("../models/movieModel");
 
-const movieController = {
+const seriesController = {
   addMovie: async (req, res, next) => {
     try {
-      const { name, description, language, year, time, casts, category } =
+      const { name, description, language, year, time, category, episodes } =
         req.body;
 
-      const movie = new movieModel({
+      const seriesMovie = new seriesModel({
         name,
         description,
         language,
@@ -18,7 +18,18 @@ const movieController = {
 
       seriesMovie.bannerImage = req.files["bannerImage"][0].path;
       seriesMovie.image = req.files["image"][0].path;
-      seriesMovie.video = req.files["video"][0].path;
+
+      const episodesArray = episodes;
+      if (episodesArray && episodesArray.length > 0) {
+        for (let i = 0; i < episodesArray.length; i++) {
+          const episode = episodesArray[i];
+          seriesMovie.episodes.push({
+            name: episode.name,
+            episodes: episode.episodeNumber,
+            video: req.files["video"][i].path,
+          });
+        }
+      }
 
       for (id of category) {
         await categoryModel
@@ -32,11 +43,11 @@ const movieController = {
           });
       }
 
-      await movie.save();
+      await seriesMovie.save();
 
       res
         .status(200)
-        .json({ success: true, message: "Add Movie Successfully" });
+        .json({ success: true, message: "Add Movie Series Successfully" });
     } catch (err) {
       next(err);
     }
@@ -50,6 +61,12 @@ const movieController = {
 
       const files = req.files;
 
+      const bannerImage = files?.filter(
+        (file) => file.fieldname === "bannerImage"
+      )[0].url;
+
+      const image = files?.filter((file) => file.fieldname === "image")[0].url;
+
       const updateData = {
         name,
         description,
@@ -61,10 +78,6 @@ const movieController = {
         time,
         category: [],
       };
-
-      updateData.bannerImage = req.files["bannerImage"][0].path;
-      updateData.image = req.files["image"][0].path;
-      updateData.video = req.files["video"][0].path;
 
       for (id of category) {
         const existingCategory = await categoryModel.findById(id);
@@ -95,12 +108,12 @@ const movieController = {
 
   addReviewMovie: async (req, res, next) => {
     try {
-      const { movieId } = req.params;
+      const { seriesId } = req.params;
       const { name, rating, comment, userId, userImage } = req.body;
 
-      const movie = await movieModel.findById(movieId);
+      const series = await seriesModel.findById(seriesId);
 
-      if (!movie)
+      if (!series)
         return res
           .status(404)
           .json({ success: false, message: "Movie not found" });
@@ -112,30 +125,31 @@ const movieController = {
         user: userId,
         userImage,
       };
-      movie.reviews.push(review);
-      movie.numReviews = movie.reviews.length;
-      movie.rating =
-        movie.reviews.reduce((acc, user) => acc + user.rating, 0) /
-        movie.reviews.length;
 
-      await movie.save();
+      series.reviews.push(review);
+      series.numReviews = movie.reviews.length;
+      series.rating =
+        series.reviews.reduce((acc, user) => acc + user.rating, 0) /
+        series.reviews.length;
+
+      await series.save();
       res.status(200).json({ success: true, message: "Comment SuccessFully" });
     } catch (err) {
       next(err);
     }
   },
 
-  deleteMovie: async (req, res, next) => {
+  deleteSeries: async (req, res, next) => {
     try {
-      const { movieId } = req.params;
+      const { seriesId } = req.params;
 
-      await movieModel.findByIdAndDelete(movieId).then(() => {
+      await seriesModel.findByIdAndDelete(seriesId).then(() => {
         return categoryModel.updateMany(
           {
-            movies: movieId,
+            movies: seriesId,
           },
           {
-            $pull: { movies: movieId },
+            $pull: { movies: seriesId },
           }
         );
       });
@@ -148,28 +162,57 @@ const movieController = {
     }
   },
 
+  deleteEpisodes: async (req, res, next) => {
+    try {
+      const { seriesId, episodeId } = req.query;
+
+      await seriesModel
+        .findByIdAndDelete(
+          seriesId,
+          {
+            $pull: { episodes: { _id: episodeId } },
+          },
+          {
+            new: true,
+          }
+        )
+        .then((result, err) => {
+          if (err) {
+            return res
+              .status(404)
+              .json({ success: false, message: "Can't not delete episode" });
+          } else {
+            res
+              .status(200)
+              .json({ success: true, message: "Delete episode Successfully" });
+          }
+        });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   addLikeMovieToUser: async (req, res, next) => {
     try {
       const { id } = req.user;
-      const { movieId } = req.params;
+      const { seriesId } = req.params;
 
-      const movieCheck = await movieModel.findById(movieId);
+      const seriesCheck = await seriesModel.findById(seriesId);
 
-      if (!movieCheck) return res.status(404).json("Movie not found");
+      if (!seriesCheck) return res.status(404).json("Movie not found");
 
       const user = await userModel.findById(id);
 
       if (user) {
         const { likedMovies } = user;
         const movieAlreadyLike = likedMovies.find(
-          (id) => id.toString() === movieId
+          (id) => id.toString() === seriesId
         );
         if (!movieAlreadyLike) {
-          console.log("Vo");
           await userModel.findByIdAndUpdate(
             id,
             {
-              likedMovies: [...user.likedMovies, movieId],
+              likedMovies: [...user.likedMovies, seriesId],
             },
             {
               new: true,
@@ -189,4 +232,4 @@ const movieController = {
   },
 };
 
-module.exports = movieController;
+module.exports = seriesController;
