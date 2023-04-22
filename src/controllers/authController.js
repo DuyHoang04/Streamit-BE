@@ -78,6 +78,7 @@ const authController = {
         success: true,
         data: {
           accessToken,
+          isAdmin,
         },
       });
     } catch (err) {
