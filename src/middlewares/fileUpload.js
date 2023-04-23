@@ -1,42 +1,37 @@
-// const multer = require("multer");
+const multer = require("multer");
+const storage = multer.diskStorage({
+  destination: (req, file, callback) => {
+    callback(null, "uploads");
+  },
+  filename: (req, file, callback) => {
+    callback(
+      null,
+      new Date().toISOString().replace(/:/g, "-") + "-" + file.originalname
+    );
+  },
+});
+const fileFilter = (req, file, callback) => {
+  if (
+    file.mimetype === "image/png" ||
+    file.mimetype === "image/jpg" ||
+    file.mimetype === "image/jpeg" ||
+    file.mimetype === "video/mp4" ||
+    file.mimetype === "video/webm" ||
+    file.mimetype === "video/ogg"
+  ) {
+    callback(null, true);
+  } else {
+    callback(null, false);
+  }
+};
+const fileUpload = multer({ storage, fileFilter }).fields([
+  { name: "bannerImage", maxCount: 1 },
+  { name: "image", maxCount: 10 },
+  { name: "video", maxCount: 100 },
+]);
+module.exports = fileUpload;
 
-// const storage = multer.diskStorage({
-//   destination: (req, file, callback) => {
-//     callback(null, "uploads");
-//   },
-//   filename: (req, file, callback) => {
-//     callback(
-//       null,
-//       new Date().toISOString().replace(/:/g, "-") + "-" + file.originalname
-//     );
-//   },
-// });
-
-// const fileFilter = (req, file, callback) => {
-//   if (
-//     file.mimetype === "image/png" ||
-//     file.mimetype === "image/jpg" ||
-//     file.mimetype === "image/jpeg" ||
-//     file.mimetype === "video/mp4" ||
-//     file.mimetype === "video/webm" ||
-//     file.mimetype === "video/ogg"
-//   ) {
-//     callback(null, true);
-//   } else {
-//     callback(null, false);
-//   }
-// };
-
-// const fileUpload = multer({ storage, fileFilter }).fields([
-//   { name: "bannerImage", maxCount: 1 },
-//   { name: "image", maxCount: 10 },
-//   { name: "video", maxCount: 10 },
-//   { name: "castImage", maxCount: 10 },
-// ]);
-
-// module.exports = fileUpload;
-
-const cloudinary = require("cloudinary").v2;
+/* const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
 const fs = require("fs");
@@ -129,4 +124,4 @@ const multerCloudinaryMiddleware = (req, res, next) => {
   });
 };
 
-module.exports = multerCloudinaryMiddleware;
+module.exports = multerCloudinaryMiddleware; */

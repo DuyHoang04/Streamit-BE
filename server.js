@@ -8,12 +8,12 @@ const app = express();
 const errorHandler = require("./src/middlewares/handleError.js");
 const { connectDatabase } = require("./src/configs/database.js");
 const routes = require("./src/routes/index.js");
-// const fileUpload = require("./src/middlewares/fileUpload.js");
+const fileUpload = require("./src/middlewares/fileUpload.js");
 const multer = require("multer");
 const path = require("path");
 const timeout = require("express-timeout-handler");
 
-const multerCloudinaryMiddleware = require("./src/middlewares/fileUpload.js");
+// const multerCloudinaryMiddleware = require("./src/middlewares/fileUpload.js");
 
 app.use(cors());
 app.use(morgan("common"));
@@ -27,11 +27,11 @@ app.use(express.static("public"));
 // cookie
 app.use(cookieParser());
 
-// app.use(fileUpload); // multer
-// app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
+app.use(fileUpload); // multer
+app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
 
 //upload file
-app.use(multerCloudinaryMiddleware);
+// app.use(multerCloudinaryMiddleware);
 
 //routes
 app.use(routes);
