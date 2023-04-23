@@ -166,33 +166,44 @@ const authController = {
       const tokenReset = generateTokenResetPass(_id, isAdmin);
 
       let mailOptions = {
-        from: "hn2929814@gmail.com",
+        from: process.env.MAIL_USER,
         to: email,
         subject: "Password Reset",
         html: ` 
-        <h2> Please Click on the given link to reset your password </h2>
-        <p>${process.env.CLIENT_URL}/resetpassword/${tokenReset}</p> 
+           <h2> Please Click on the given link to reset your password </h2>
+           <i>${process.env.CLIENT_URL}/resetpassword/${tokenReset}</i> 
     `,
       };
 
-      await userModel.findByIdAndUpdate(
-        user._id,
-        {
-          $set: { resetLink: tokenReset },
-        },
-        { new: true }
-      );
-
-      transporter.sendMail(mailOptions, function (error, info) {
-        if (error) {
-          console.log(error);
-        } else {
+      await userModel
+        .findByIdAndUpdate(
+          user._id,
+          {
+            $set: { resetLink: tokenReset },
+          },
+          { new: true }
+        )
+        .then((result) => {
+          transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
+              return res.status(400).json({
+                success: true,
+                message: "Send email failed",
+              });
+            } else {
+              return res.status(200).json({
+                success: true,
+                message: "Email have been sent, kindly follow the instructions",
+              });
+            }
+          });
+        })
+        .catch((err) => {
           return res.status(200).json({
             success: true,
-            message: "Email have been sent, kindly follow the instructions",
+            message: "Error",
           });
-        }
-      });
+        });
     } catch (err) {
       next(err);
     }
@@ -217,6 +228,8 @@ const authController = {
 
         const user = await userModel.findOne({ resetLink });
 
+        console.log(user);
+
         if (!user) {
           return res
             .status(400)
@@ -231,12 +244,14 @@ const authController = {
           resetLink: "", // after updating the password in db make reset lik empty
         };
 
-        await userModel.findByIdAndUpdate(user._id, newPassword, { new: true });
-
-        return res.status(200).json({
-          success: true,
-          message: "Your password has been changed",
-        });
+        await userModel
+          .findByIdAndUpdate(user._id, newPassword, { new: true })
+          .then((result) => {
+            return res.status(200).json({
+              success: true,
+              message: "Your password has been changed",
+            });
+          });
       } else {
         res
           .status(404)
