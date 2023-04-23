@@ -48,6 +48,16 @@ const categoryController = {
       next(err);
     }
   },
+
+  getAllCategory: async (req, res, next) => {
+    try {
+      const category = await categoryModel.find();
+
+      res.status(200).json({ success: true, data: category });
+    } catch (err) {
+      next(err);
+    }
+  },
 };
 
 module.exports = categoryController;

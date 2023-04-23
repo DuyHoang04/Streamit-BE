@@ -7,6 +7,6 @@ const categoryRoute = require("./v1/categoryRoute.js");
 routes.use("/api/v1/auth", authRoute);
 routes.use("/api/v1/users", userRoute);
 routes.use("/api/v1/movies", movieRoute);
-routes.use("/api/v1/categories", categoryRoute);
+routes.use("/api/v1/genres", categoryRoute);
 
 module.exports = routes;

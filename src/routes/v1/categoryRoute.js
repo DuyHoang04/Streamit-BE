@@ -8,5 +8,6 @@ router.put(
   verifyTokenAdmin,
   categoryController.updateCategory
 );
+router.get("/", categoryController.getAllCategory);
 
 module.exports = router;

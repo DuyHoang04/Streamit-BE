@@ -5,8 +5,7 @@ const userModel = require("../models/userModel");
 const movieController = {
   addMovie: async (req, res, next) => {
     try {
-      const { name, description, language, year, time, casts, category } =
-        req.body;
+      const { name, description, language, year, time, genres } = req.body;
 
       const files = req.files;
 
@@ -36,7 +35,7 @@ const movieController = {
         // })),
       });
 
-      for (id of category) {
+      for (id of genres) {
         await categoryModel
           .findByIdAndUpdate(id, {
             $push: { movies: id },
@@ -49,6 +48,8 @@ const movieController = {
       }
 
       // await movie.save();
+
+      console.log(movie);
 
       res
         .status(200)

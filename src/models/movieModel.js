@@ -44,7 +44,7 @@ const MovieSchema = new mongoose.Schema(
     image: {
       type: String,
     },
-    category: [
+    genres: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Category",
