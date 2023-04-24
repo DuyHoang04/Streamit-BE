@@ -1,12 +1,12 @@
 const { movieModel } = require("../models/movieModel");
-const categoryModel = require("../models/categoryModel");
+const genresModel = require("../models/genresModel");
 const userModel = require("../models/userModel");
 
 const movieController = {
   addMovie: async (req, res, next) => {
     try {
       const { name, description, language, year, time, genres } = req.body;
-
+      const newGenres = JSON.parse(genres);
       const movie = new movieModel({
         name,
         description,
@@ -14,34 +14,34 @@ const movieController = {
         year,
         time,
       });
+      movie.bannerImage = req.files["bannerImage"][0].path;
+      movie.image = req.files["image"][0].path;
+      movie.video = req.files["video"][0].path;
 
-<<<<<<< HEAD
-      for (id of genres) {
-=======
-      seriesMovie.bannerImage = req.files["bannerImage"][0].path;
-      seriesMovie.image = req.files["image"][0].path;
-      seriesMovie.video = req.files["video"][0].path;
-
-      for (id of category) {
->>>>>>> 019f7cf145062cbaf3a5ce7a77b9c17598a43f7d
-        await categoryModel
+      for (id of newGenres) {
+        await genresModel
           .findByIdAndUpdate(id, {
             $push: { movies: id },
           })
-          .then((category, err) => {
+          .then((genres, err) => {
             if (err)
               res.status(404).json({ success: false, message: err.message });
-            movie.category.push(category._id);
+            movie.genres.push(genres._id);
           });
       }
 
-      await movie.save();
-
-      console.log(movie);
-
-      res
-        .status(200)
-        .json({ success: true, message: "Add Movie Successfully" });
+      await movie
+        .save()
+        .then(() => {
+          res
+            .status(200)
+            .json({ success: true, message: "Add Movie Successfully" });
+        })
+        .catch(() => {
+          res
+            .status(500)
+            .json({ success: false, message: "Something Went Wrong" });
+        });
     } catch (err) {
       next(err);
     }
@@ -50,7 +50,7 @@ const movieController = {
   updateMovie: async (req, res, next) => {
     try {
       const { movieId } = req.params;
-      const { name, description, language, category, year, time, video } =
+      const { name, description, language, genres, year, time, video } =
         req.body;
 
       const files = req.files;
@@ -64,26 +64,26 @@ const movieController = {
         language,
         year,
         time,
-        category: [],
+        genres: [],
       };
 
       updateData.bannerImage = req.files["bannerImage"][0].path;
       updateData.image = req.files["image"][0].path;
       updateData.video = req.files["video"][0].path;
 
-      for (id of category) {
-        const existingCategory = await categoryModel.findById(id);
+      for (id of genres) {
+        const existingGenres = await genresModel.findById(id);
 
-        const index = existingCategory.movies.findIndex((movie) =>
+        const index = existingGenres.movies.findIndex((movie) =>
           movie.equals(movieId)
         );
         if (index >= 0) {
-          existingCategory.movies[index] = movieId;
+          existingGenres.movies[index] = movieId;
         } else {
-          existingCategory.movies.push(movieId);
+          existingGenres.movies.push(movieId);
         }
-        await existingCategory.save();
-        updateData.category.push(id);
+        await existingGenres.save();
+        updateData.genres.push(id);
       }
 
       await movieModel.findByIdAndUpdate(movieId, updateData, {
@@ -135,7 +135,7 @@ const movieController = {
       const { movieId } = req.params;
 
       await movieModel.findByIdAndDelete(movieId).then(() => {
-        return categoryModel.updateMany(
+        return genresModel.updateMany(
           {
             movies: movieId,
           },
