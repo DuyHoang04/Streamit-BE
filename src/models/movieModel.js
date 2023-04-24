@@ -44,10 +44,10 @@ const MovieSchema = new mongoose.Schema(
     image: {
       type: String,
     },
-    category: [
+    genres: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Category",
+        ref: "Genres",
       },
     ],
     language: {
@@ -111,9 +111,9 @@ const seriesSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    category: {
+    genres: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
+      ref: "Genres",
     },
     language: {
       type: String,
