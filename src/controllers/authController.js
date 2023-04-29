@@ -15,7 +15,6 @@ const authController = {
     try {
       console.log(req.body);
       const { username, email, password } = req.body;
-      console.log(username, email, password);
       const checkEmail = await userModel.findOne({ email });
 
       if (checkEmail) {
