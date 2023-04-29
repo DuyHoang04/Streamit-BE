@@ -78,7 +78,7 @@ const MovieSchema = new mongoose.Schema(
 
 const episodeSchema = new mongoose.Schema(
   {
-    name: {
+    episodeName: {
       type: String,
       required: true,
     },
@@ -111,10 +111,12 @@ const seriesSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    genres: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Genres",
-    },
+    genres: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Genres",
+      },
+    ],
     language: {
       type: String,
       required: true,

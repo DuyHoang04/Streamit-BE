@@ -1,12 +1,16 @@
-const categoryModel = require("../models/categoryModel");
 const userModel = require("../models/userModel");
 const { seriesModel } = require("../models/movieModel");
+const genresModel = require("../models/genresModel");
 
 const seriesController = {
-  addMovie: async (req, res, next) => {
+  addSeries: async (req, res, next) => {
     try {
-      const { name, description, language, year, time, category, episodes } =
+      const { name, description, language, year, time, episodes, genres } =
         req.body;
+      const newEpisodes = JSON.parse(episodes);
+      const newGenres = JSON.parse(genres);
+
+      console.log(newGenres);
 
       const seriesMovie = new seriesModel({
         name,
@@ -19,35 +23,44 @@ const seriesController = {
       seriesMovie.bannerImage = req.files["bannerImage"][0].path;
       seriesMovie.image = req.files["image"][0].path;
 
-      const episodesArray = episodes;
+      const episodesArray = newEpisodes;
+      console.log(episodesArray);
       if (episodesArray && episodesArray.length > 0) {
         for (let i = 0; i < episodesArray.length; i++) {
           const episode = episodesArray[i];
           seriesMovie.episodes.push({
-            name: episode.name,
-            episodes: episode.episodeNumber,
+            episodeName: episode.episodeName,
+            episodeNumber: episode.episodeNumber,
             video: req.files["video"][i].path,
           });
         }
       }
 
-      for (id of category) {
-        await categoryModel
+      for (id of newGenres) {
+        console.log(id);
+        await genresModel
           .findByIdAndUpdate(id, {
-            $push: { movies: id },
+            $push: { movies: seriesMovie._id },
           })
-          .then((category, err) => {
+          .then((genres, err) => {
             if (err)
               res.status(404).json({ success: false, message: err.message });
-            movie.category.push(category._id);
+            seriesMovie.genres.push(genres._id);
           });
       }
 
-      await seriesMovie.save();
-
-      res
-        .status(200)
-        .json({ success: true, message: "Add Movie Series Successfully" });
+      await seriesMovie
+        .save()
+        .then(() => {
+          res
+            .status(200)
+            .json({ success: true, message: "Add Movie Series Successfully" });
+        })
+        .catch(() => {
+          res
+            .status(500)
+            .json({ success: false, message: "Something Went Wrong" });
+        });
     } catch (err) {
       next(err);
     }

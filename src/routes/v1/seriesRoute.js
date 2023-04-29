@@ -1,11 +1,11 @@
 const router = require("express").Router();
-const movieController = require("../../controllers/movieController");
+const seriesController = require("../../controllers/seriesController");
 const { verifyToken } = require("../../middlewares/verifyToken");
 
-router.post("/add", movieController.addMovie);
-router.put("/review/:movieId", movieController.addReviewMovie);
-router.put("/update/:movieId", movieController.updateMovie);
-router.delete("/delete/:movieId", movieController.deleteMovie);
-router.post("/like/:movieId", verifyToken, movieController.addLikeMovieToUser);
+router.post("/add", seriesController.addSeries);
+// router.put("/review/:movieId", seriesController.addReviewMovie);
+// router.put("/update/:movieId", seriesController.updateMovie);
+// router.delete("/delete/:movieId", seriesController.deleteMovie);
+// router.post("/like/:movieId", verifyToken, seriesController.addLikeMovieToUser);
 
 module.exports = router;
