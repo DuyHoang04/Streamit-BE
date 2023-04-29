@@ -24,7 +24,6 @@ const seriesController = {
       seriesMovie.image = req.files["image"][0].path;
 
       const episodesArray = newEpisodes;
-      console.log(episodesArray);
       if (episodesArray && episodesArray.length > 0) {
         for (let i = 0; i < episodesArray.length; i++) {
           const episode = episodesArray[i];
@@ -37,7 +36,6 @@ const seriesController = {
       }
 
       for (id of newGenres) {
-        console.log(id);
         await genresModel
           .findByIdAndUpdate(id, {
             $push: { movies: seriesMovie._id },
