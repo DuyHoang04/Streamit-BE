@@ -7,6 +7,15 @@ const movieController = {
     try {
       const { name, description, language, year, time, genres } = req.body;
       const newGenres = JSON.parse(genres);
+
+      const movieCheck = movieModel.findOne({ name });
+
+      if (movieCheck) {
+        res
+          .status(404)
+          .json({ success: false, message: "Movie already exists" });
+      }
+
       const movie = new movieModel({
         name,
         description,
@@ -21,7 +30,7 @@ const movieController = {
       for (id of newGenres) {
         await genresModel
           .findByIdAndUpdate(id, {
-            $push: { movies: id },
+            $push: { movies: movie._id },
           })
           .then((genres, err) => {
             if (err)
