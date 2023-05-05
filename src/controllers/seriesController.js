@@ -10,21 +10,20 @@ const seriesController = {
       const newEpisodes = JSON.parse(episodes);
       const newGenres = JSON.parse(genres);
 
-      console.log(newGenres);
-
       const seriesMovie = new seriesModel({
         name,
         description,
         language,
         year,
         time,
+        genres: [],
+        episodes: [],
       });
 
       seriesMovie.bannerImage = req.files["bannerImage"][0].path;
       seriesMovie.image = req.files["image"][0].path;
 
       const episodesArray = newEpisodes;
-      console.log(episodesArray);
       if (episodesArray && episodesArray.length > 0) {
         for (let i = 0; i < episodesArray.length; i++) {
           const episode = episodesArray[i];
@@ -37,7 +36,6 @@ const seriesController = {
       }
 
       for (id of newGenres) {
-        console.log(id);
         await genresModel
           .findByIdAndUpdate(id, {
             $push: { movies: seriesMovie._id },
@@ -66,54 +64,83 @@ const seriesController = {
     }
   },
 
-  updateMovie: async (req, res, next) => {
+  updateSeries: async (req, res, next) => {
     try {
-      const { movieId } = req.params;
-      const { name, description, language, category, year, time, video } =
+      const { seriesId } = req.params;
+      const { name, description, language, genres, year, time, episodes } =
         req.body;
 
-      const files = req.files;
+      const series = await seriesModel.findById(seriesId);
 
-      const bannerImage = files?.filter(
-        (file) => file.fieldname === "bannerImage"
-      )[0].url;
-
-      const image = files?.filter((file) => file.fieldname === "image")[0].url;
-
-      const updateData = {
+      const updateDataSeries = {
         name,
         description,
-        bannerImage,
-        image,
-        video,
         language,
         year,
         time,
-        category: [],
+        genres: [],
+        episodes: series?.episodes,
       };
 
-      for (id of category) {
-        const existingCategory = await categoryModel.findById(id);
-
-        const index = existingCategory.movies.findIndex((movie) =>
-          movie.equals(movieId)
+      const newGenres = JSON.parse(genres);
+      for (id of newGenres) {
+        const existingGenres = await genresModel.findById(id);
+        const index = existingGenres.movies.findIndex((movie) =>
+          movie.equals(seriesId)
         );
         if (index >= 0) {
-          existingCategory.movies[index] = movieId;
+          existingGenres.movies[index] = seriesId;
         } else {
-          existingCategory.movies.push(movieId);
+          existingGenres.movies.push(seriesId);
         }
-        await existingCategory.save();
-        updateData.category.push(id);
+        await existingGenres.save().then(() => {
+          updateDataSeries.genres.push(id);
+        });
       }
 
-      await movieModel.findByIdAndUpdate(movieId, updateData, {
-        new: true, // trả về movie đã được cập nhật
-      });
+      if (req.files["bannerImage"]) {
+        updateDataSeries.bannerImage = req.files["bannerImage"][0].path;
+      }
+      if (req.files["image"]) {
+        updateDataSeries.image = req.files["image"][0].path;
+      }
+      if (req.files["video"]) {
+        const newEpisodes = JSON.parse(episodes);
+        const episodesToUpdate = [];
 
-      res
-        .status(200)
-        .json({ success: true, message: "Update Movie Successfully" });
+        if (newEpisodes && newEpisodes.length > 0) {
+          for (let i = 0; i < newEpisodes.length; i++) {
+            const episode = newEpisodes[i];
+            episodesToUpdate.push({
+              episodeName: episode?.episodeName,
+              episodeNumber: episode?.episodeNumber,
+              video: req.files["video"][i].path,
+            });
+          }
+        }
+        updateDataSeries.episodes.push(...episodesToUpdate);
+      }
+
+      await seriesModel
+        .findByIdAndUpdate(
+          seriesId,
+          {
+            $set: updateDataSeries,
+          },
+          {
+            new: true, // trả về movie đã được cập nhật
+          }
+        )
+        .then(() => {
+          res
+            .status(200)
+            .json({ success: true, message: "Update Movie Successfully" });
+        })
+        .catch(() => {
+          res
+            .status(500)
+            .json({ success: true, message: "Update Movie Failure" });
+        });
     } catch (err) {
       next(err);
     }
@@ -156,8 +183,10 @@ const seriesController = {
     try {
       const { seriesId } = req.params;
 
+      console.log(seriesId);
+
       await seriesModel.findByIdAndDelete(seriesId).then(() => {
-        return categoryModel.updateMany(
+        return genresModel.updateMany(
           {
             movies: seriesId,
           },
@@ -177,10 +206,12 @@ const seriesController = {
 
   deleteEpisodes: async (req, res, next) => {
     try {
-      const { seriesId, episodeId } = req.query;
+      const { seriesId } = req.params;
+      const { episodeId } = req.query;
 
+      console.log(seriesId, episodeId);
       await seriesModel
-        .findByIdAndDelete(
+        .findByIdAndUpdate(
           seriesId,
           {
             $pull: { episodes: { _id: episodeId } },
@@ -203,6 +234,50 @@ const seriesController = {
     } catch (err) {
       next(err);
     }
+  },
+
+  updateEpisode: async (req, res, next) => {
+    const { seriesId } = req.params;
+    const { episodeId } = req.query;
+    console.log(seriesId, episodeId);
+    const { episodeNumber, episodeName } = req.body;
+    let video;
+
+    const seriesCheck = await seriesModel.findById(seriesId);
+
+    if (!seriesCheck)
+      return res
+        .status(404)
+        .json({ success: false, message: "Series Not Found" });
+
+    const episodesCheck = seriesCheck.episodes.find(
+      (item) => item._id.toString() === episodeId
+    );
+
+    if (!episodesCheck)
+      return res
+        .status(404)
+        .json({ success: false, message: "Episodes Not Found" });
+
+    if (req?.files["video"]) {
+      video = req.files["video"][0].path;
+    }
+
+    const updateEpisode = {
+      "episodes.$.episodeName": episodeName,
+      "episodes.$.episodeNumber": episodeNumber,
+      "episodes.$.video": video,
+    };
+
+    await seriesModel
+      .findOneAndUpdate(
+        { _id: seriesId, "episodes._id": episodeId },
+        { $set: updateEpisode },
+        { new: true }
+      )
+      .then(() => {
+        res.status(200).json({ success: true, message: "Update Successfully" });
+      });
   },
 
   addLikeMovieToUser: async (req, res, next) => {

@@ -59,30 +59,33 @@ const movieController = {
   updateMovie: async (req, res, next) => {
     try {
       const { movieId } = req.params;
-      const { name, description, language, genres, year, time, video } =
-        req.body;
+      const { name, description, language, genres, year, time } = req.body;
 
-      const files = req.files;
+      const newGenres = JSON.parse(genres);
 
       const updateData = {
         name,
         description,
-        bannerImage,
-        image,
-        video,
         language,
         year,
         time,
         genres: [],
       };
 
-      updateData.bannerImage = req.files["bannerImage"][0].path;
-      updateData.image = req.files["image"][0].path;
-      updateData.video = req.files["video"][0].path;
+      if (req.files["bannerImage"]) {
+        updateData.bannerImage = req.files["bannerImage"][0].path;
+      }
 
-      for (id of genres) {
+      if (req.files["image"]) {
+        updateData.image = req.files["image"][0].path;
+      }
+
+      if (req.files["video"]) {
+        updateData.video = req.files["video"][0].path;
+      }
+
+      for (id of newGenres) {
         const existingGenres = await genresModel.findById(id);
-
         const index = existingGenres.movies.findIndex((movie) =>
           movie.equals(movieId)
         );
@@ -95,13 +98,15 @@ const movieController = {
         updateData.genres.push(id);
       }
 
-      await movieModel.findByIdAndUpdate(movieId, updateData, {
-        new: true, // trả về movie đã được cập nhật
-      });
-
-      res
-        .status(200)
-        .json({ success: true, message: "Update Movie Successfully" });
+      await movieModel
+        .findByIdAndUpdate(movieId, updateData, {
+          new: true,
+        })
+        .then(() => {
+          res
+            .status(200)
+            .json({ success: true, message: "Update Movie Successfully" });
+        });
     } catch (err) {
       next(err);
     }

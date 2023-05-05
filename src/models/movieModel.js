@@ -121,6 +121,7 @@ const seriesSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    time: String,
     year: {
       type: String,
       required: true,
