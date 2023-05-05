@@ -28,7 +28,7 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 app.use(fileUpload); // multer
-app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
+app.use("/api/v1/uploads", express.static(path.join(__dirname, "/uploads")));
 
 //upload file
 // app.use(multerCloudinaryMiddleware);
