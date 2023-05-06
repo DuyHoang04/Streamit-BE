@@ -115,7 +115,9 @@ const movieController = {
   addReviewMovie: async (req, res, next) => {
     try {
       const { movieId } = req.params;
-      const { name, rating, comment, userId, userImage } = req.body;
+      console.log(req.user);
+      const userId = req.user.id;
+      const { name, rating, comment, userImage } = req.body;
 
       const movie = await movieModel.findById(movieId);
 
@@ -184,7 +186,6 @@ const movieController = {
           (id) => id.toString() === movieId
         );
         if (!movieAlreadyLike) {
-          console.log("Vo");
           await userModel.findByIdAndUpdate(
             id,
             {
@@ -202,6 +203,51 @@ const movieController = {
       }
 
       res.status(200).json({ success: true, message: "Successfully" });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  deleteLikeMovieToUser: async (req, res, next) => {
+    try {
+      const { movieId } = req.params;
+
+      const userId = req.user.id;
+
+      const user = await userModel.findById(userId);
+      if (user) {
+        const movies = user.likedMovies;
+        const MovieIndex = movies.findIndex((id) => id === movieId);
+        if (!MovieIndex) {
+          res.status(400).json({ msg: "Movie not found!" });
+        }
+        movies.splice(MovieIndex, 1);
+
+        await userModel.findByIdAndUpdate(
+          userId,
+          {
+            likedMovies: movies,
+          },
+          { new: true }
+        );
+        return res
+          .status(200)
+          .json({ success: true, message: "Delete Successfully" });
+      } else {
+        return res
+          .status(400)
+          .json({ success: false, message: "User not found" });
+      }
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  getAllMovies: async (req, res, next) => {
+    try {
+      const movieList = await movieModel.find().populate("genres", "name");
+
+      res.status(200).json({ success: true, data: movieList });
     } catch (err) {
       next(err);
     }
