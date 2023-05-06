@@ -82,7 +82,17 @@ const userController = {
     try {
       const { userId } = req.params;
 
-      const user = await userModel.findByIdAndDelete(userId);
+      const user = await userModel
+        .findById(userId)
+        .populate("likedMovies")
+        .populate({
+          path: "likedMovies",
+          populate: {
+            path: "genres",
+            model: "Genres",
+            select: "name",
+          },
+        });
 
       const { password, ...more } = user._doc;
 
@@ -91,9 +101,12 @@ const userController = {
       next(err);
     }
   },
+
   getAllUser: async (req, res, next) => {
     try {
-      const user = await userModel.find({}, "-password -likedMovies");
+      const user = await userModel
+        .find({}, "-password -likedMovies")
+        .populate("likedMovies");
 
       res.status(200).json({ success: true, data: user });
     } catch (err) {

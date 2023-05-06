@@ -280,27 +280,37 @@ const seriesController = {
       });
   },
 
-  addLikeMovieToUser: async (req, res, next) => {
+  getAllSeries: async (req, res, next) => {
+    try {
+      const seriesList = await seriesModel.find().populate("genres", "name");
+
+      res.status(200).json({ success: true, data: seriesList });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  addLikeSeriesToUser: async (req, res, next) => {
     try {
       const { id } = req.user;
       const { seriesId } = req.params;
 
       const seriesCheck = await seriesModel.findById(seriesId);
 
-      if (!seriesCheck) return res.status(404).json("Movie not found");
+      if (!seriesCheck) return res.status(404).json("Series not found");
 
       const user = await userModel.findById(id);
 
       if (user) {
-        const { likedMovies } = user;
-        const movieAlreadyLike = likedMovies.find(
+        const { likedSeries } = user;
+        const movieAlreadyLike = likedSeries.find(
           (id) => id.toString() === seriesId
         );
         if (!movieAlreadyLike) {
           await userModel.findByIdAndUpdate(
             id,
             {
-              likedMovies: [...user.likedMovies, seriesId],
+              likedSeries: [...user.likedSeries, seriesId],
             },
             {
               new: true,
@@ -314,6 +324,74 @@ const seriesController = {
       }
 
       res.status(200).json({ success: true, message: "Successfully" });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  deleteLikeSeriesToUser: async (req, res, next) => {
+    try {
+      const { seriesId } = req.params;
+
+      const userId = req.user.id;
+
+      const user = await userModel.findById(userId);
+      if (user) {
+        const series = user.likedSeries;
+        const seriesIndex = series.findIndex((id) => id === seriesId);
+        if (!seriesIndex) {
+          res.status(400).json({ msg: "Movie not found!" });
+        }
+        series.splice(seriesIndex, 1);
+
+        await userModel.findByIdAndUpdate(
+          userId,
+          {
+            likedSeries: series,
+          },
+          { new: true }
+        );
+        return res
+          .status(200)
+          .json({ success: true, message: "Delete Successfully" });
+      } else {
+        return res
+          .status(400)
+          .json({ success: false, message: "User not found" });
+      }
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  addReviewSeries: async (req, res, next) => {
+    try {
+      const { seriesId } = req.params;
+      const userId = req.user.id;
+      const { name, rating, comment, userImage } = req.body;
+
+      const series = await seriesModel.findById(seriesId);
+
+      if (!series)
+        return res
+          .status(404)
+          .json({ success: false, message: "Series not found" });
+
+      const review = {
+        name,
+        rating: Number(rating),
+        comment,
+        user: userId,
+        userImage,
+      };
+      series.reviews.push(review);
+      series.numReviews = series.reviews.length;
+      series.rating =
+        series.reviews.reduce((acc, user) => acc + user.rating, 0) /
+        series.reviews.length;
+
+      await series.save();
+      res.status(200).json({ success: true, message: "Comment SuccessFully" });
     } catch (err) {
       next(err);
     }

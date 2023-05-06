@@ -30,6 +30,12 @@ const UserSchema = mongoose.Schema(
         ref: "Movie",
       },
     ],
+    likedSeries: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Series",
+      },
+    ],
     resetLink: String,
   },
   {
