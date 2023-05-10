@@ -3,11 +3,8 @@ const genresController = require("../../controllers/genresController");
 const { verifyTokenAdmin } = require("../../middlewares/verifyToken");
 
 router.post("/add", genresController.addGenres);
-router.put(
-  "/update/:genresId",
-  verifyTokenAdmin,
-  genresController.updateGenres
-);
+router.put("/update/:genresId", genresController.updateGenres);
 router.get("/", genresController.getAllGenres);
+router.delete("/delete/:genresId", genresController.deleteGenres);
 
 module.exports = router;

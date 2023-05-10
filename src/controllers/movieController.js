@@ -245,7 +245,10 @@ const movieController = {
 
   getAllMovies: async (req, res, next) => {
     try {
-      const movieList = await movieModel.find().populate("genres", "name");
+      const movieList = await movieModel
+        .find()
+        .populate("genres", "name")
+        .sort({ createdAt: -1 });
 
       res.status(200).json({ success: true, data: movieList });
     } catch (err) {

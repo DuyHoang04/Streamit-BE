@@ -282,7 +282,10 @@ const seriesController = {
 
   getAllSeries: async (req, res, next) => {
     try {
-      const seriesList = await seriesModel.find().populate("genres", "name");
+      const seriesList = await seriesModel
+        .find()
+        .populate("genres", "name")
+        .sort({ createdAt: -1 });
 
       res.status(200).json({ success: true, data: seriesList });
     } catch (err) {
