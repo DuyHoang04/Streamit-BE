@@ -8,10 +8,10 @@ const movieController = {
       const { name, description, language, year, time, genres } = req.body;
       const newGenres = JSON.parse(genres);
 
-      const movieCheck = movieModel.findOne({ name });
+      const movieCheck = await movieModel.findOne({ name });
 
       if (movieCheck) {
-        res
+        return res
           .status(404)
           .json({ success: false, message: "Movie already exists" });
       }
