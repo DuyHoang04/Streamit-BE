@@ -5,16 +5,17 @@ const {
   verifyTokenAdmin,
 } = require("../../middlewares/verifyToken.js");
 
-router.put("/update/:userId", verifyToken, userController.updateUser);
+router.put("/update/:userId", userController.updateUser);
 router.put(
   "/change_password/:userId",
   verifyToken,
   userController.changePassword
 );
-router.delete("/delete/:userId", verifyTokenAdmin, userController.deleteUser);
+router.delete("/delete/:userId", userController.deleteUser);
 
 router.get("/:userId", userController.getDetailUser);
 
 router.get("/", userController.getAllUser);
+router.get("/find/like_movie", verifyToken, userController.getLikedMovie);
 
 module.exports = router;

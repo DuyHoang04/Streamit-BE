@@ -28,6 +28,7 @@ const fileUpload = multer({ storage, fileFilter }).fields([
   { name: "bannerImage", maxCount: 1 },
   { name: "image", maxCount: 10 },
   { name: "video", maxCount: 100 },
+  { name: "picturePath", maxCount: 100 },
 ]);
 module.exports = fileUpload;
 

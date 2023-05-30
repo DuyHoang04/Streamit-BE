@@ -24,4 +24,6 @@ router.post(
 
 router.post("/review/:seriesId", verifyToken, seriesController.addReviewSeries);
 
+router.get("/find/:seriesId", seriesController.getDetailSeries);
+
 module.exports = router;

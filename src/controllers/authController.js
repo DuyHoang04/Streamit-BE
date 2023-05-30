@@ -42,9 +42,7 @@ const authController = {
 
   login: async (req, res, next) => {
     try {
-      console.log(req.body);
       const user = await userModel.findOne({ email: req.body.email });
-      console.log(user);
 
       if (!user)
         return res.status(404).json({
@@ -67,6 +65,15 @@ const authController = {
       refreshTokens.push(refreshToken);
 
       res.cookie("refreshToken", refreshToken, {
+        domain: false,
+        httpOnly: true,
+        secure: false,
+        path: "/",
+        sameSite: "strict",
+      });
+
+      res.cookie("accessToken", accessToken, {
+        domain: false,
         httpOnly: true,
         secure: false,
         path: "/",
@@ -76,8 +83,8 @@ const authController = {
       res.status(200).json({
         success: true,
         data: {
-          accessToken,
           isAdmin,
+          accessToken,
         },
       });
     } catch (err) {
@@ -164,13 +171,20 @@ const authController = {
       const { _id, isAdmin } = user;
       const tokenReset = generateTokenResetPass(_id, isAdmin);
 
+      // random key reset
+      var keyReset = "";
+      for (var i = 0; i < 6; i++) {
+        var randomNumber = Math.floor(Math.random() * 10);
+        keyReset += randomNumber.toString();
+      }
+
       let mailOptions = {
         from: process.env.MAIL_USER,
         to: email,
         subject: "Password Reset",
         html: ` 
-           <h2> Please Click on the given link to reset your password </h2>
-           <i>${process.env.CLIENT_URL}/resetpassword/${tokenReset}</i> 
+           <h2> KEY RESET PASSWORD FOR YOU: </h2>
+           <h1>${keyReset}</h1> 
     `,
       };
 
@@ -178,7 +192,7 @@ const authController = {
         .findByIdAndUpdate(
           user._id,
           {
-            $set: { resetLink: tokenReset },
+            $set: { keyReset: keyReset },
           },
           { new: true }
         )
@@ -210,24 +224,10 @@ const authController = {
 
   resetPassword: async (req, res, next) => {
     try {
-      const { resetLink, newPass } = req.body;
+      const { keyReset, newPass } = req.body;
 
-      if (resetLink) {
-        jwt.verify(
-          resetLink,
-          process.env.JWT_RESET_KEY,
-          async function (err, result) {
-            if (err) {
-              return res.status(401).json({
-                error: "Incorrect token or it is expired.",
-              });
-            }
-          }
-        );
-
-        const user = await userModel.findOne({ resetLink });
-
-        console.log(user);
+      if (keyReset) {
+        const user = await userModel.findOne({ keyReset });
 
         if (!user) {
           return res
@@ -240,7 +240,7 @@ const authController = {
 
         const newPassword = {
           password: passwordHash,
-          resetLink: "", // after updating the password in db make reset lik empty
+          keyReset: "", // after updating the password in db make reset lik empty
         };
 
         await userModel

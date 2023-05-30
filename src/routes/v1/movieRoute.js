@@ -15,5 +15,6 @@ router.post(
 );
 
 router.get("/", movieController.getAllMovies);
+router.get("/find/:movieId", movieController.getAllMovies);
 
 module.exports = router;

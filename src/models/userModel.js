@@ -24,19 +24,8 @@ const UserSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    likedMovies: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Movie",
-      },
-    ],
-    likedSeries: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Series",
-      },
-    ],
-    resetLink: String,
+    likedMovies: Array,
+    keyReset: String,
   },
   {
     timestamps: true,

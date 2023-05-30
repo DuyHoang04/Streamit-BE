@@ -115,11 +115,11 @@ const movieController = {
   addReviewMovie: async (req, res, next) => {
     try {
       const { movieId } = req.params;
-      console.log(req.user);
       const userId = req.user.id;
-      const { name, rating, comment, userImage } = req.body;
+      const { name, rating, comment } = req.body;
 
       const movie = await movieModel.findById(movieId);
+      const user = await userModel.findById(userId);
 
       if (!movie)
         return res
@@ -131,8 +131,9 @@ const movieController = {
         rating: Number(rating),
         comment,
         user: userId,
-        userImage,
+        userImage: user?.picturePath,
       };
+
       movie.reviews.push(review);
       movie.numReviews = movie.reviews.length;
       movie.rating =
@@ -174,22 +175,40 @@ const movieController = {
       const { id } = req.user;
       const { movieId } = req.params;
 
-      const movieCheck = await movieModel.findById(movieId);
+      const movieCheck = await movieModel
+        .findById(movieId)
+        .populate("genres", "name");
 
       if (!movieCheck) return res.status(404).json("Movie not found");
 
       const user = await userModel.findById(id);
 
+      const genresMovie = movieCheck.genres.map(({ name }) => {
+        return name;
+      });
+
+      const dataMovieLike = {
+        id: movieCheck._id,
+        name: movieCheck.name,
+        genres: genresMovie,
+        image: movieCheck.image,
+      };
+
+      console.log(dataMovieLike);
+
       if (user) {
         const { likedMovies } = user;
         const movieAlreadyLike = likedMovies.find(
-          (id) => id.toString() === movieId
+          ({ id }) => id.toString() === movieId
+        );
+        const movieAlreadyLikes = likedMovies.find((movie) =>
+          console.log(movie)
         );
         if (!movieAlreadyLike) {
           await userModel.findByIdAndUpdate(
             id,
             {
-              likedMovies: [...user.likedMovies, movieId],
+              likedMovies: [...user.likedMovies, dataMovieLike],
             },
             {
               new: true,
@@ -249,6 +268,19 @@ const movieController = {
         .find()
         .populate("genres", "name")
         .sort({ createdAt: -1 });
+
+      res.status(200).json({ success: true, data: movieList });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  getAllMovies: async (req, res, next) => {
+    try {
+      const { movieId } = req.params;
+      const movieList = await movieModel
+        .findById(movieId)
+        .populate("genres", "name");
 
       res.status(200).json({ success: true, data: movieList });
     } catch (err) {
