@@ -7,24 +7,31 @@ const userController = {
       const { userId } = req.params;
       const { username, email } = req.body;
 
-      const picturePath = req.files[0].url;
-
       const newDataUser = {
         username,
         email,
-        picturePath,
       };
 
-      await userModel.findByIdAndUpdate(
-        userId,
-        {
-          $set: newDataUser,
-        },
-        {
-          new: true,
-        }
-      );
-      res.status(200).json({ success: true, message: "Update Successfully" });
+      if (req.files["picturePath"]) {
+        console.log("vo");
+        newDataUser.picturePath = req.files["picturePath"][0].path;
+      }
+
+      await userModel
+        .findByIdAndUpdate(
+          userId,
+          {
+            $set: newDataUser,
+          },
+          {
+            new: true,
+          }
+        )
+        .then(() => {
+          res
+            .status(200)
+            .json({ success: true, message: "Update Successfully" });
+        });
     } catch (err) {
       next(err);
     }
@@ -106,9 +113,24 @@ const userController = {
     try {
       const user = await userModel
         .find({}, "-password -likedMovies")
-        .populate("likedMovies");
+        .sort({ createdAt: -1 });
 
       res.status(200).json({ success: true, data: user });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  getLikedMovie: async (req, res, next) => {
+    try {
+      const { id } = req.user;
+      const user = await userModel.findById(id);
+      if (!user)
+        return res
+          .status(404)
+          .json({ success: false, message: "user not found" });
+      const { likedMovies } = user;
+      res.status(200).json({ success: true, data: likedMovies });
     } catch (err) {
       next(err);
     }

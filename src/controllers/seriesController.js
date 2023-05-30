@@ -298,22 +298,36 @@ const seriesController = {
       const { id } = req.user;
       const { seriesId } = req.params;
 
-      const seriesCheck = await seriesModel.findById(seriesId);
+      const seriesCheck = await seriesModel
+        .findById(seriesId)
+        .populate("genres", "name");
 
       if (!seriesCheck) return res.status(404).json("Series not found");
 
       const user = await userModel.findById(id);
 
+      const genresMovie = seriesCheck.genres.map(({ name }) => {
+        return name;
+      });
+
+      const dataMovieLike = {
+        id: seriesCheck._id,
+        name: seriesCheck.name,
+        genres: genresMovie,
+        image: seriesCheck.image,
+        isSeries: seriesCheck.isSeries,
+      };
+
       if (user) {
-        const { likedSeries } = user;
-        const movieAlreadyLike = likedSeries.find(
-          (id) => id.toString() === seriesId
+        const { likedMovies } = user;
+        const seriesAlreadyLike = likedMovies.find(
+          ({ id }) => id.toString() === seriesId
         );
-        if (!movieAlreadyLike) {
+        if (!seriesAlreadyLike) {
           await userModel.findByIdAndUpdate(
             id,
             {
-              likedSeries: [...user.likedSeries, seriesId],
+              likedMovies: [...user.likedMovies, dataMovieLike],
             },
             {
               new: true,
@@ -395,6 +409,19 @@ const seriesController = {
 
       await series.save();
       res.status(200).json({ success: true, message: "Comment SuccessFully" });
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  getDetailSeries: async (req, res, next) => {
+    try {
+      const { seriesId } = req.params;
+      const seriesData = await seriesModel
+        .findById(seriesId)
+        .populate("genres", "name");
+
+      res.status(200).json({ success: true, data: seriesData });
     } catch (err) {
       next(err);
     }
