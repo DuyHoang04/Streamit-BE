@@ -281,9 +281,15 @@ const seriesController = {
   },
 
   getAllSeries: async (req, res, next) => {
+    const query = {};
     try {
+      const genresQuery = req.query.genres;
+      if (genresQuery) {
+        const genres = await genresModel.findOne({ name: genresQuery });
+        query.genres = genres._id;
+      }
       const seriesList = await seriesModel
-        .find()
+        .find(query)
         .populate("genres", "name")
         .sort({ createdAt: -1 });
 
@@ -293,101 +299,14 @@ const seriesController = {
     }
   },
 
-  addLikeSeriesToUser: async (req, res, next) => {
-    try {
-      const { id } = req.user;
-      const { seriesId } = req.params;
-
-      const seriesCheck = await seriesModel
-        .findById(seriesId)
-        .populate("genres", "name");
-
-      if (!seriesCheck) return res.status(404).json("Series not found");
-
-      const user = await userModel.findById(id);
-
-      const genresMovie = seriesCheck.genres.map(({ name }) => {
-        return name;
-      });
-
-      const dataMovieLike = {
-        id: seriesCheck._id,
-        name: seriesCheck.name,
-        genres: genresMovie,
-        image: seriesCheck.image,
-        isSeries: seriesCheck.isSeries,
-      };
-
-      if (user) {
-        const { likedMovies } = user;
-        const seriesAlreadyLike = likedMovies.find(
-          ({ id }) => id.toString() === seriesId
-        );
-        if (!seriesAlreadyLike) {
-          await userModel.findByIdAndUpdate(
-            id,
-            {
-              likedMovies: [...user.likedMovies, dataMovieLike],
-            },
-            {
-              new: true,
-            }
-          );
-        } else {
-          return res
-            .status(404)
-            .json({ success: false, message: "Movie already like" });
-        }
-      }
-
-      res.status(200).json({ success: true, message: "Successfully" });
-    } catch (err) {
-      next(err);
-    }
-  },
-
-  deleteLikeSeriesToUser: async (req, res, next) => {
-    try {
-      const { seriesId } = req.params;
-
-      const userId = req.user.id;
-
-      const user = await userModel.findById(userId);
-      if (user) {
-        const series = user.likedSeries;
-        const seriesIndex = series.findIndex((id) => id === seriesId);
-        if (!seriesIndex) {
-          res.status(400).json({ msg: "Movie not found!" });
-        }
-        series.splice(seriesIndex, 1);
-
-        await userModel.findByIdAndUpdate(
-          userId,
-          {
-            likedSeries: series,
-          },
-          { new: true }
-        );
-        return res
-          .status(200)
-          .json({ success: true, message: "Delete Successfully" });
-      } else {
-        return res
-          .status(400)
-          .json({ success: false, message: "User not found" });
-      }
-    } catch (err) {
-      next(err);
-    }
-  },
-
   addReviewSeries: async (req, res, next) => {
     try {
       const { seriesId } = req.params;
       const userId = req.user.id;
-      const { name, rating, comment, userImage } = req.body;
+      const { name, rating, comment } = req.body;
 
       const series = await seriesModel.findById(seriesId);
+      const user = await userModel.findById(userId);
 
       if (!series)
         return res
@@ -399,7 +318,7 @@ const seriesController = {
         rating: Number(rating),
         comment,
         user: userId,
-        userImage,
+        userImage: user.picturePath || "",
       };
       series.reviews.push(review);
       series.numReviews = series.reviews.length;
